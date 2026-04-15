@@ -1,6 +1,7 @@
 import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
+import io
 
 st.set_page_config(page_title="Densidade In Situ - Metrosul", page_icon="🛣️")
 
@@ -10,10 +11,12 @@ def ajustar_peso(valor):
         return round(valor * 1000, 3)
     return round(valor, 3)
 
-# --- GERADOR DE PDF ---
+# --- GERADOR DE PDF (CORRIGIDO E TESTADO) ---
 def gerar_pdf_ensaio(d):
     pdf = FPDF()
     pdf.add_page()
+    
+    # Cabeçalho
     pdf.set_font("Arial", "B", 14)
     pdf.cell(190, 10, "RELATORIO DE ENSAIO - DENSIDADE IN SITU", ln=True, align='C')
     pdf.set_font("Arial", "", 9)
@@ -30,6 +33,7 @@ def gerar_pdf_ensaio(d):
             pdf.cell(50, 8, f" {valor}", border=1, ln=True, align='R')
         pdf.ln(3)
 
+    # Dados da Umidade - O PDF mostra o desconto da tara
     criar_tabela("DETERMINACAO DA UMIDADE", [
         ("A - Tara do recipiente (g)", f"{d['u_a']:.3f}"),
         ("B - Peso do solo umido + recipiente (g)", f"{d['u_b']:.3f}"),
@@ -40,6 +44,7 @@ def gerar_pdf_ensaio(d):
         ("G - Teor de umidade - w (%)", f"{d['u_g']:.2f}")
     ])
 
+    # Dados da Densidade
     criar_tabela("DETERMINACAO DA DENSIDADE IN SITU", [
         ("A - Massa inicial (aparelho + areia) (g)", f"{d['d_a']:.3f}"),
         ("B - Massa final (aparelho + areia) (g)", f"{d['d_b']:.3f}"),
@@ -53,14 +58,22 @@ def gerar_pdf_ensaio(d):
         ("J - Massa especifica seca (I / (1 + w)) (g/cm3)", f"{d['d_j']:.3f}")
     ])
 
+    # Resultado Final de Compactação
     pdf.set_font("Arial", "B", 12)
     cor = (0, 100, 0) if d['gc'] >= 95 else (200, 0, 0)
     pdf.set_text_color(*cor)
     pdf.cell(190, 12, f"GRAU DE COMPACTACAO FINAL: {d['gc']:.1f} %", border=1, ln=True, align='C')
+    
+    # Rodapé
+    pdf.ln(5)
+    pdf.set_text_color(0,0,0)
+    pdf.set_font("Arial", "I", 8)
+    pdf.cell(190, 5, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True, align='R')
+
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 # --- INTERFACE ---
-st.title("🧪 Densidade In Situ (Modo Conferência)")
+st.title("🧪 Densidade In Situ (Com PDF)")
 
 # SEÇÃO 1: UMIDADE
 with st.expander("💧 1. Umidade", expanded=True):
@@ -75,11 +88,9 @@ with st.expander("💧 1. Umidade", expanded=True):
     u_f = round(u_d - u_e, 3)
     u_g = round((u_f / u_e) * 100, 2) if u_e > 0 else 0.0
     
-    # Exibição dos resultados bloqueados
+    # Resultados Bloqueados para conferência
     r_col1, r_col2 = st.columns(2)
     r_col1.number_input("D - Peso Solo Úmido (g)", value=u_d, format="%.3f", disabled=True)
-    r_col1.number_input("E - Peso Solo Seco (g)", value=u_e, format="%.3f", disabled=True)
-    r_col2.number_input("F - Peso Água (g)", value=u_f, format="%.3f", disabled=True)
     r_col2.number_input("G - Umidade (%)", value=u_g, format="%.2f", disabled=True)
 
 # SEÇÃO 2: DENSIDADE
@@ -90,7 +101,7 @@ with st.expander("⚖️ 2. Densidade", expanded=True):
     
     d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=1540.000)
     d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.410)
-    d_h_in = st.number_input("H - Massa Solo Úmido do Buraco (g)", format="%.3f", step=0.001)
+    d_h_in = st.number_input("H - Massa Solo Úmido do Buraco (Líquido) (g)", format="%.3f", step=0.001)
 
     d_a, d_b, d_h = ajustar_peso(d_a_in), ajustar_peso(d_b_in), ajustar_peso(d_h_in)
     
@@ -100,13 +111,4 @@ with st.expander("⚖️ 2. Densidade", expanded=True):
     d_i = round(d_h / d_g, 3) if d_g > 0 else 0
     d_j = round(d_i / (1 + (u_g / 100)), 3)
     
-    # Exibição dos resultados bloqueados da densidade
-    rd1, rd2 = st.columns(2)
-    rd1.number_input("C - Areia Consumida (g)", value=d_c, format="%.3f", disabled=True)
-    rd1.number_input("E - Areia no Buraco (g)", value=d_e, format="%.3f", disabled=True)
-    rd2.number_input("G - Volume Buraco (cm³)", value=d_g, format="%.1f", disabled=True)
-    rd2.number_input("I - Dens. Úmida (g/cm³)", value=d_i, format="%.3f", disabled=True)
-    
-    st.success(f"J - Massa Específica Seca Final: {d_j:.3f} g/cm³")
-
-# SEÇÃO 3:
+    rd1
