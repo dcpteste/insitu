@@ -71,4 +71,52 @@ with st.expander("💧 1. Determinação da Umidade", expanded=True):
     u_b_in = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001)
     u_c_in = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001)
     
-    u_
+    u_b, u_c = ajustar_peso(u_b_in), ajustar_peso(u_c_in)
+    u_d = round(u_b - u_a, 3)
+    u_e = round(u_c - u_a, 3)
+    u_f = round(u_d - u_e, 3)
+    u_g = round((u_f / u_e) * 100, 2) if u_e > 0 else 0.0
+    
+    st.info(f"**Umidade Calculada (G): {u_g}%**")
+
+# 2. DENSIDADE
+with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
+    d_c1, d_c2 = st.columns(2)
+    d_a_in = d_c1.number_input("A - Massa Inicial (Frasco+Areia)", format="%.3f", step=0.001)
+    d_b_in = d_c2.number_input("B - Massa Final (Frasco+Areia)", format="%.3f", step=0.001)
+    
+    d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=1540.000)
+    d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.410)
+    d_h_in = st.number_input("H - Massa Solo Úmido do Buraco (g)", format="%.3f", step=0.001)
+
+    d_a, d_b, d_h = ajustar_peso(d_a_in), ajustar_peso(d_b_in), ajustar_peso(d_h_in)
+    
+    d_c = round(d_a - d_b, 3)
+    d_e = round(d_c - d_d, 3)
+    d_g = round(d_e / d_f, 1) if d_f > 0 else 0.0
+    d_i = round(d_h / d_g, 3) if d_g > 0 else 0.0
+    d_j = round(d_i / (1 + (u_g / 100)), 3)
+    
+    st.write(f"Volume do Buraco: **{d_g} cm³**")
+    st.success(f"Massa Seca de Campo (J): **{d_j:.3f} g/cm³**")
+
+# 3. RESULTADO FINAL
+st.divider()
+proctor = st.number_input("Proctor Máximo Lab (g/cm³)", format="%.3f", step=0.001, value=2.050)
+gc = round((d_j / proctor) * 100, 1) if proctor > 0 else 0.0
+
+st.metric("Grau de Compactação", f"{gc}%")
+
+if gc > 0:
+    dados = {
+        'u_a':u_a, 'u_b':u_b, 'u_c':u_c, 'u_d':u_d, 'u_e':u_e, 'u_f':u_f, 'u_g':u_g,
+        'd_a':d_a, 'd_b':d_b, 'd_c':d_c, 'd_d':d_d, 'd_e':d_e, 'd_f':d_f, 'd_g':d_g, 'd_h':d_h, 'd_i':d_i, 'd_j':d_j, 'gc':gc
+    }
+    pdf_bytes = gerar_pdf_ensaio(dados)
+    st.download_button(
+        label="📥 Baixar Relatório PDF",
+        data=pdf_bytes,
+        file_name="Relatorio_Compactacao.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
