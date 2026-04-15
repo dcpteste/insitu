@@ -5,12 +5,6 @@ import io
 
 st.set_page_config(page_title="Densidade In Situ - Metrosul", page_icon="🧪")
 
-# --- AJUSTE DE PESO (KG PARA G) ---
-def ajustar_peso(valor):
-    if 0 < valor < 35: 
-        return round(valor * 1000, 3)
-    return round(valor, 3)
-
 # --- GERADOR DE PDF ---
 def gerar_pdf_ensaio(d):
     pdf = FPDF()
@@ -67,11 +61,10 @@ st.title("🧪 Controle de Compactação")
 # 1. UMIDADE
 with st.expander("💧 1. Determinação da Umidade", expanded=True):
     u_c1, u_c2 = st.columns(2)
-    u_a = u_c1.number_input("A - Tara da Bandeja (g)", format="%.3f", step=0.001)
-    u_b_in = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001)
-    u_c_in = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001)
+    u_a = u_c1.number_input("A - Tara da Bandeja (g)", format="%.3f", step=0.001, value=0.000)
+    u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, value=0.000)
+    u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001, value=0.000)
     
-    u_b, u_c = ajustar_peso(u_b_in), ajustar_peso(u_c_in)
     u_d = round(u_b - u_a, 3)
     u_e = round(u_c - u_a, 3)
     u_f = round(u_d - u_e, 3)
@@ -82,15 +75,13 @@ with st.expander("💧 1. Determinação da Umidade", expanded=True):
 # 2. DENSIDADE
 with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
     d_c1, d_c2 = st.columns(2)
-    d_a_in = d_c1.number_input("A - Massa Inicial (Frasco+Areia)", format="%.3f", step=0.001)
-    d_b_in = d_c2.number_input("B - Massa Final (Frasco+Areia)", format="%.3f", step=0.001)
+    d_a = d_c1.number_input("A - Massa Inicial (Frasco+Areia) (g)", format="%.3f", step=0.001, value=0.000)
+    d_b = d_c2.number_input("B - Massa Final (Frasco+Areia) (g)", format="%.3f", step=0.001, value=0.000)
     
     d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=1540.000)
     d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.410)
-    d_h_in = st.number_input("H - Massa Solo Úmido do Buraco (g)", format="%.3f", step=0.001)
+    d_h = st.number_input("H - Massa Solo Úmido do Buraco (g)", format="%.3f", step=0.001, value=0.000)
 
-    d_a, d_b, d_h = ajustar_peso(d_a_in), ajustar_peso(d_b_in), ajustar_peso(d_h_in)
-    
     d_c = round(d_a - d_b, 3)
     d_e = round(d_c - d_d, 3)
     d_g = round(d_e / d_f, 1) if d_f > 0 else 0.0
