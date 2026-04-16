@@ -44,8 +44,8 @@ def gerar_pdf_ensaio(d):
         ("F - Densidade da areia (g/cm3)", f"{d['d_f']:.3f}"),
         ("G - Volume do buraco (E / F) (cm3)", f"{d['d_g']:.1f}"),
         ("H - Massa solo umido + bandeja (g)", f"{d['d_h_total']:.3f}"),
-        ("I - Massa especifica umida (H_liq / G) (g/cm3)", f"{d['d_i']:.3f}"),
-        ("J - Massa especifica seca (I / (1 + w)) (g/cm3)", f"{d['d_j']:.3f}")
+        ("I - Tara da bandeja da cava (g)", f"{d['d_h_tara']:.3f}"),
+        ("J - Massa especifica seca (g/cm3)", f"{d['d_j']:.3f}")
     ])
 
     pdf.set_font("Arial", "B", 12)
@@ -61,16 +61,16 @@ st.title("🧪 Controle de Compactação - Metrosul")
 # 1. UMIDADE
 with st.expander("💧 1. Determinação da Umidade", expanded=True):
     u_c1, u_c2 = st.columns(2)
-    u_a = u_c1.number_input("A - Tara da Bandeja (g)", format="%.3f", step=0.001, key="u_tara")
-    u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001)
-    u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001)
+    u_a = u_c1.number_input("A - Tara da Bandeja Pequena (g)", format="%.3f", step=0.001, key="tara_umidade")
+    u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, key="solo_umido_rec")
+    u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001, key="solo_seco_rec")
     
     u_d = round(u_b - u_a, 3)
     u_e = round(u_c - u_a, 3)
     u_f = round(u_d - u_e, 3)
     u_g = round((u_f / u_e) * 100, 2) if u_e > 0 else 0.0
     
-    st.info(f"**Umidade Calculada (G): {u_g}%**")
+    st.info(f"**Umidade (w): {u_g}%**")
 
 # 2. DENSIDADE
 with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
@@ -81,9 +81,10 @@ with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
     d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=1540.000)
     d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.410)
     
-    # AJUSTE SOLICITADO: H agora recebe Solo + Bandeja
-    d_h_total = st.number_input("H - Massa Solo Úmido + Bandeja (g)", format="%.3f", step=0.001)
-    d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=u_a)
+    st.divider()
+    # AGORA INDEPENDENTE:
+    d_h_total = st.number_input("H - Massa Solo Úmido + Bandeja da Cava (g)", format="%.3f", step=0.001)
+    d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=0.000, key="tara_cava")
     
     d_h_liquido = round(d_h_total - d_h_tara, 3)
     d_c = round(d_a - d_b, 3)
@@ -92,7 +93,7 @@ with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
     d_i = round(d_h_liquido / d_g, 3) if d_g > 0 else 0.0
     d_j = round(d_i / (1 + (u_g / 100)), 3)
     
-    st.write(f"Solo Líquido da Cava: **{d_h_liquido:.3f} g**")
+    st.write(f"Massa Líquida da Cava: **{d_h_liquido:.3f} g**")
     st.write(f"Volume do Buraco: **{d_g} cm³**")
     st.success(f"Massa Seca de Campo (J): **{d_j:.3f} g/cm³**")
 
@@ -107,7 +108,7 @@ if gc > 0:
     dados = {
         'u_a':u_a, 'u_b':u_b, 'u_c':u_c, 'u_d':u_d, 'u_e':u_e, 'u_f':u_f, 'u_g':u_g,
         'd_a':d_a, 'd_b':d_b, 'd_c':d_c, 'd_d':d_d, 'd_e':d_e, 'd_f':d_f, 'd_g':d_g, 
-        'd_h_total':d_h_total, 'd_i':d_i, 'd_j':d_j, 'gc':gc
+        'd_h_total':d_h_total, 'd_h_tara':d_h_tara, 'd_i':d_i, 'd_j':d_j, 'gc':gc
     }
     pdf_bytes = gerar_pdf_ensaio(dados)
     st.download_button("📥 Baixar Relatório PDF", pdf_bytes, "Relatorio_Compactacao.pdf", "application/pdf", use_container_width=True)
