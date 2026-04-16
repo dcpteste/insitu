@@ -56,24 +56,31 @@ def gerar_pdf_ensaio(d):
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 # --- INTERFACE ---
-st.title("🧪 Controle de Compactação - Metrosul")
+st.title("🧪 Painel de Conferência - Metrosul")
 
 # 1. UMIDADE
-with st.expander("💧 1. Determinação da Umidade", expanded=True):
+with st.expander("💧 1. Umidade (Visualização de Cálculos)", expanded=True):
     u_c1, u_c2 = st.columns(2)
-    u_a = u_c1.number_input("A - Tara da Bandeja Pequena (g)", format="%.3f", step=0.001, key="tara_umidade")
-    u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, key="solo_umido_rec")
-    u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001, key="solo_seco_rec")
+    u_a = u_c1.number_input("A - Tara da Bandeja Pequena (g)", format="%.3f", step=0.001, key="t_u")
+    u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, key="s_u")
+    u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001, key="s_s")
     
     u_d = round(u_b - u_a, 3)
     u_e = round(u_c - u_a, 3)
     u_f = round(u_d - u_e, 3)
     u_g = round((u_f / u_e) * 100, 2) if u_e > 0 else 0.0
     
-    st.info(f"**Umidade (w): {u_g}%**")
+    # Painel de Conferência da Umidade
+    st.write("---")
+    st.caption("Cálculos Internos (Somente Leitura):")
+    res1, res2, res3 = st.columns(3)
+    res1.number_input("Peso Solo Úmido (D)", value=u_d, format="%.3f", disabled=True)
+    res2.number_input("Peso Solo Seco (E)", value=u_e, format="%.3f", disabled=True)
+    res3.number_input("Peso da Água (F)", value=u_f, format="%.3f", disabled=True)
+    st.info(f"**Umidade Calculada: {u_g}%**")
 
 # 2. DENSIDADE
-with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
+with st.expander("⚖️ 2. Densidade (Visualização de Cálculos)", expanded=True):
     d_c1, d_c2 = st.columns(2)
     d_a = d_c1.number_input("A - Massa Inicial (Frasco+Areia) (g)", format="%.3f", step=0.001)
     d_b = d_c2.number_input("B - Massa Final (Frasco+Areia) (g)", format="%.3f", step=0.001)
@@ -81,10 +88,8 @@ with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
     d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=1540.000)
     d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.410)
     
-    st.divider()
-    # AGORA INDEPENDENTE:
     d_h_total = st.number_input("H - Massa Solo Úmido + Bandeja da Cava (g)", format="%.3f", step=0.001)
-    d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=0.000, key="tara_cava")
+    d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=0.000, key="t_c")
     
     d_h_liquido = round(d_h_total - d_h_tara, 3)
     d_c = round(d_a - d_b, 3)
@@ -93,9 +98,14 @@ with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
     d_i = round(d_h_liquido / d_g, 3) if d_g > 0 else 0.0
     d_j = round(d_i / (1 + (u_g / 100)), 3)
     
-    st.write(f"Massa Líquida da Cava: **{d_h_liquido:.3f} g**")
-    st.write(f"Volume do Buraco: **{d_g} cm³**")
-    st.success(f"Massa Seca de Campo (J): **{d_j:.3f} g/cm³**")
+    # Painel de Conferência da Densidade
+    st.write("---")
+    st.caption("Cálculos Internos (Somente Leitura):")
+    rd1, rd2, rd3 = st.columns(3)
+    rd1.number_input("Areia no Buraco (E)", value=d_e, format="%.3f", disabled=True)
+    rd2.number_input("Volume do Buraco (G)", value=d_g, format="%.1f", disabled=True)
+    rd3.number_input("Solo Líquido Cava", value=d_h_liquido, format="%.3f", disabled=True)
+    st.success(f"**Massa Específica Seca (J): {d_j:.3f} g/cm³**")
 
 # 3. RESULTADO FINAL
 st.divider()
