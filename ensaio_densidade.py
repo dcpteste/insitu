@@ -56,70 +56,69 @@ def gerar_pdf_ensaio(d):
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 # --- INTERFACE ---
-st.title("🧪 Painel de Conferência - Metrosul")
+st.title("🧪 Painel de Controle - Metrosul")
 
 # 1. UMIDADE
-with st.expander("💧 1. Umidade (Visualização de Cálculos)", expanded=True):
-    u_c1, u_c2 = st.columns(2)
-    u_a = u_c1.number_input("A - Tara da Bandeja Pequena (g)", format="%.3f", step=0.001, key="t_u")
-    u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, key="s_u")
+with st.expander("💧 1. Determinação da Umidade", expanded=True):
+    col1, col2 = st.columns(2)
+    u_a = col1.number_input("A - Tara da Bandeja Pequena (g)", format="%.3f", step=0.001, key="t_u")
+    u_b = col2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, key="s_u")
     u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001, key="s_s")
     
-    # CALCULOS SEM ROUND EXCESSIVO
+    # Cálculos de Umidade
     u_d = u_b - u_a
     u_e = u_c - u_a
     u_f = u_d - u_e
     u_g = (u_f / u_e) * 100 if u_e > 0 else 0.0
     
     st.write("---")
-    st.caption("Cálculos Internos:")
     res1, res2, res3 = st.columns(3)
     res1.metric("Solo Úmido (D)", f"{u_d:.3f}")
     res2.metric("Solo Seco (E)", f"{u_e:.3f}")
     res3.metric("Peso Água (F)", f"{u_f:.3f}")
-    st.info(f"**Umidade Calculada (w): {u_g:.2f}%**")
+    st.info(f"**Teor de Umidade (w): {u_g:.2f}%**")
 
 # 2. DENSIDADE
-with st.expander("⚖️ 2. Densidade (Visualização de Cálculos)", expanded=True):
-    d_c1, d_c2 = st.columns(2)
-    d_a = d_c1.number_input("A - Massa Inicial (Frasco+Areia) (g)", format="%.3f", step=0.001)
-    d_b = d_c2.number_input("B - Massa Final (Frasco+Areia) (g)", format="%.3f", step=0.001)
+with st.expander("⚖️ 2. Densidade In Situ", expanded=True):
+    col_d1, col_d2 = st.columns(2)
+    d_a = col_d1.number_input("A - Massa Inicial (Frasco+Areia) (g)", format="%.3f", step=0.001)
+    d_b = col_d2.number_input("B - Massa Final (Frasco+Areia) (g)", format="%.3f", step=0.001)
     
-    d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=0.533)
-    d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.422)
+    col_d3, col_d4 = st.columns(2)
+    d_d = col_d3.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=0.533)
+    d_f = col_d4.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.422)
     
     d_h_total = st.number_input("H - Massa Solo Úmido + Bandeja da Cava (g)", format="%.3f", step=0.001)
     d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=0.240, key="t_c")
     
-    # --- O SEGREDO ESTÁ AQUI: REMOVIDOS OS ROUNDS DOS CALCULOS INTERMEDIÁRIOS ---
+    # Cálculos de Densidade - PRECISÃO TOTAL
     d_h_liquido = d_h_total - d_h_tara
     d_c = d_a - d_b
     d_e = d_c - d_d
-    d_g = d_e / d_f if d_f > 0 else 0.0 # Volume bruto (ex: 0.9311)
+    d_g = d_e / d_f if d_f > 0 else 0.0 # Volume sem arredondar
     
-    d_i = d_h_liquido / d_g if d_g > 0 else 0.0 # Densidade Úmida
-    d_j = d_i / (1 + (u_g / 100)) if u_e > 0 else 0.0 # Densidade Seca FINAL
+    d_i = d_h_liquido / d_g if d_g > 0 else 0.0
+    d_j = d_i / (1 + (u_g / 100)) if u_e > 0 else 0.0
     
     st.write("---")
-    st.caption("Cálculos Internos:")
     rd1, rd2, rd3 = st.columns(3)
     rd1.metric("Areia Buraco (E)", f"{d_e:.3f}")
     rd2.metric("Volume (G)", f"{d_g:.4f}")
     rd3.metric("Solo Líquido", f"{d_h_liquido:.3f}")
     st.success(f"**Massa Seca de Campo (J): {d_j:.3f} g/cm³**")
 
-# 3. RESULTADO FINAL
+# 3. GRAU DE COMPACTAÇÃO
 st.divider()
 proctor = st.number_input("Proctor Máximo Lab (g/cm³)", format="%.3f", step=0.001, value=1.785)
 gc = (d_j / proctor) * 100 if proctor > 0 else 0.0
 
-st.metric("Grau de Compactação", f"{gc:.1f}%")
+st.metric("GRAU DE COMPACTAÇÃO", f"{gc:.1f}%")
 
 if gc > 0:
-    dados = {
+    dados_pdf = {
         'u_a':u_a, 'u_b':u_b, 'u_c':u_c, 'u_d':u_d, 'u_e':u_e, 'u_f':u_f, 'u_g':u_g,
         'd_a':d_a, 'd_b':d_b, 'd_c':d_c, 'd_d':d_d, 'd_e':d_e, 'd_f':d_f, 'd_g':d_g, 
         'd_h_total':d_h_total, 'd_h_tara':d_h_tara, 'd_i':d_i, 'd_j':d_j, 'gc':gc
     }
-    pdf_bytes = gerar_pdf_ensaio(dados)
-    st.download_button("📥 Baixar Relatório PDF", pdf_bytes, "Relatorio_Compactacao.pdf", "application/pdf", use_container_width=True)
+    pdf_output = gerar_pdf_ensaio(dados_pdf)
+    st.download_button("📥 Baixar Relatório PDF", pdf_output, "Relatorio_Metrosul.pdf", "application/pdf", use_container_width=True)
