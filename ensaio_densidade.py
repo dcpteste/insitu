@@ -42,7 +42,7 @@ def gerar_pdf_ensaio(d):
         ("D - Massa areia no cone (g)", f"{d['d_d']:.3f}"),
         ("E - Massa areia no buraco (C - D) (g)", f"{d['d_e']:.3f}"),
         ("F - Densidade da areia (g/cm3)", f"{d['d_f']:.3f}"),
-        ("G - Volume do buraco (E / F) (cm3)", f"{d['d_g']:.1f}"),
+        ("G - Volume do buraco (E / F) (cm3)", f"{d['d_g']:.4f}"),
         ("H - Massa solo umido + bandeja (g)", f"{d['d_h_total']:.3f}"),
         ("I - Tara da bandeja da cava (g)", f"{d['d_h_tara']:.3f}"),
         ("J - Massa especifica seca (g/cm3)", f"{d['d_j']:.3f}")
@@ -65,19 +65,19 @@ with st.expander("💧 1. Umidade (Visualização de Cálculos)", expanded=True)
     u_b = u_c2.number_input("B - Solo Úmido + Bandeja (g)", format="%.3f", step=0.001, key="s_u")
     u_c = st.number_input("C - Solo Seco + Bandeja (g)", format="%.3f", step=0.001, key="s_s")
     
-    u_d = round(u_b - u_a, 3)
-    u_e = round(u_c - u_a, 3)
-    u_f = round(u_d - u_e, 3)
-    u_g = round((u_f / u_e) * 100, 2) if u_e > 0 else 0.0
+    # CALCULOS SEM ROUND EXCESSIVO
+    u_d = u_b - u_a
+    u_e = u_c - u_a
+    u_f = u_d - u_e
+    u_g = (u_f / u_e) * 100 if u_e > 0 else 0.0
     
-    # Painel de Conferência da Umidade
     st.write("---")
-    st.caption("Cálculos Internos (Somente Leitura):")
+    st.caption("Cálculos Internos:")
     res1, res2, res3 = st.columns(3)
-    res1.number_input("Peso Solo Úmido (D)", value=u_d, format="%.3f", disabled=True)
-    res2.number_input("Peso Solo Seco (E)", value=u_e, format="%.3f", disabled=True)
-    res3.number_input("Peso da Água (F)", value=u_f, format="%.3f", disabled=True)
-    st.info(f"**Umidade Calculada: {u_g}%**")
+    res1.metric("Solo Úmido (D)", f"{u_d:.3f}")
+    res2.metric("Solo Seco (E)", f"{u_e:.3f}")
+    res3.metric("Peso Água (F)", f"{u_f:.3f}")
+    st.info(f"**Umidade Calculada (w): {u_g:.2f}%**")
 
 # 2. DENSIDADE
 with st.expander("⚖️ 2. Densidade (Visualização de Cálculos)", expanded=True):
@@ -85,34 +85,35 @@ with st.expander("⚖️ 2. Densidade (Visualização de Cálculos)", expanded=T
     d_a = d_c1.number_input("A - Massa Inicial (Frasco+Areia) (g)", format="%.3f", step=0.001)
     d_b = d_c2.number_input("B - Massa Final (Frasco+Areia) (g)", format="%.3f", step=0.001)
     
-    d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=1540.000)
-    d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.410)
+    d_d = st.number_input("D - Massa Areia no Cone (g)", format="%.3f", step=0.001, value=0.533)
+    d_f = st.number_input("F - Densidade da Areia (g/cm³)", format="%.3f", step=0.001, value=1.422)
     
     d_h_total = st.number_input("H - Massa Solo Úmido + Bandeja da Cava (g)", format="%.3f", step=0.001)
-    d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=0.000, key="t_c")
+    d_h_tara = st.number_input("Tara da Bandeja da Cava (g)", format="%.3f", step=0.001, value=0.240, key="t_c")
     
-    d_h_liquido = round(d_h_total - d_h_tara, 3)
-    d_c = round(d_a - d_b, 3)
-    d_e = round(d_c - d_d, 3)
-    d_g = round(d_e / d_f, 1) if d_f > 0 else 0.0
-    d_i = round(d_h_liquido / d_g, 3) if d_g > 0 else 0.0
-    d_j = round(d_i / (1 + (u_g / 100)), 3)
+    # --- O SEGREDO ESTÁ AQUI: REMOVIDOS OS ROUNDS DOS CALCULOS INTERMEDIÁRIOS ---
+    d_h_liquido = d_h_total - d_h_tara
+    d_c = d_a - d_b
+    d_e = d_c - d_d
+    d_g = d_e / d_f if d_f > 0 else 0.0 # Volume bruto (ex: 0.9311)
     
-    # Painel de Conferência da Densidade
+    d_i = d_h_liquido / d_g if d_g > 0 else 0.0 # Densidade Úmida
+    d_j = d_i / (1 + (u_g / 100)) if u_e > 0 else 0.0 # Densidade Seca FINAL
+    
     st.write("---")
-    st.caption("Cálculos Internos (Somente Leitura):")
+    st.caption("Cálculos Internos:")
     rd1, rd2, rd3 = st.columns(3)
-    rd1.number_input("Areia no Buraco (E)", value=d_e, format="%.3f", disabled=True)
-    rd2.number_input("Volume do Buraco (G)", value=d_g, format="%.1f", disabled=True)
-    rd3.number_input("Solo Líquido Cava", value=d_h_liquido, format="%.3f", disabled=True)
-    st.success(f"**Massa Específica Seca (J): {d_j:.3f} g/cm³**")
+    rd1.metric("Areia Buraco (E)", f"{d_e:.3f}")
+    rd2.metric("Volume (G)", f"{d_g:.4f}")
+    rd3.metric("Solo Líquido", f"{d_h_liquido:.3f}")
+    st.success(f"**Massa Seca de Campo (J): {d_j:.3f} g/cm³**")
 
 # 3. RESULTADO FINAL
 st.divider()
-proctor = st.number_input("Proctor Máximo Lab (g/cm³)", format="%.3f", step=0.001, value=2.050)
-gc = round((d_j / proctor) * 100, 1) if proctor > 0 else 0.0
+proctor = st.number_input("Proctor Máximo Lab (g/cm³)", format="%.3f", step=0.001, value=1.785)
+gc = (d_j / proctor) * 100 if proctor > 0 else 0.0
 
-st.metric("Grau de Compactação", f"{gc}%")
+st.metric("Grau de Compactação", f"{gc:.1f}%")
 
 if gc > 0:
     dados = {
